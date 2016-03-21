@@ -1,0 +1,25 @@
+{
+  "name": "crawlUrl",
+  "version": "1.0.0",
+  "description": "Lorem",
+  "main": "./crawlurl.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rudebaguette/crawlUrl.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rudebaguette/crawlUrl/issues"
+  },
+  "homepage": "https://github.com/rudebaguette/crawlUrl",
+  "dependencies":{
+    "express": "^4.13.3"
+  },
+  "scripts": {
+    "start": "./crawlurl.js"
+  },
+  "engines": {
+    "node": "4.2.1"
+  }
+}
