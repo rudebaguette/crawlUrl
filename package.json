@@ -13,8 +13,11 @@
     "url": "https://github.com/rudebaguette/crawlUrl/issues"
   },
   "homepage": "https://github.com/rudebaguette/crawlUrl",
-  "dependencies":{
-    "express": "^4.13.3"
+  "dependencies": {
+    "cheerio": "^0.20.0",
+    "express": "^4.13.4",
+    "htmlparser": "^1.7.7",
+    "node-cache": "^3.2.1"
   },
   "scripts": {
     "start": "./crawlurl.js"
