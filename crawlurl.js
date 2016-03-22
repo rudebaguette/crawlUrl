@@ -62,6 +62,13 @@
             return lib;
         };
 
+        var clean_url = function(url){
+            if(!/^http/.exec(url)){
+                return 'http://'+url;
+            }
+            return url;
+        }
+
         app.get('*', function(req, res) {
             var myCache = new NodeCache();
             var url = req.query.url;
@@ -74,50 +81,67 @@
             };
 
             if(url){
+                // Clean URL
+                url = clean_url(url);
+
                 // Checking for cache
+                myCache.get(url, function(err, value){
+                    if( !err ){
+                        if(value){
+                            res.statusCode = 200;
+                            res.send(value);
+                        }else{
+                            // [HTTP] CRAWL GIVEN URL
+                            get_http_lib(url).get(url, function(resp){
 
-                    // [HTTP] CRAWL GIVEN URL
-                    get_http_lib(url).get(url, function(resp){
-
-                        resp.setEncoding('utf8');
-                        resp.on("data", function(chunk) {
-                            html += chunk;
-                        });
-                        resp.on("end", function(){
-                            var $ = cheerio.load(html);
-
-                            // Find openGraph metas
-                            var response = extract_meta($, metas);
-
-                            // Find every rss and associated title in the metas
-                            response.rss = extract_rss($);
-
-                            //Extract favicon or return Host/favicon.ico
-                            response.favicon = extract_favicon($, url);
-
-                            //Extract oEmbed
-                            var links = $('link[type="application/json+oembed"]');
-                            if(links.length === 1){
-                                var json = '';
-                                get_http_lib(links[0].attribs.href).get(links[0].attribs.href, function(resp){
-                                    resp.on("data", function(chunk) {
-                                        json += chunk;
-                                    });
-                                    resp.on("end", function(){
-                                        response.oembed = JSON.parse(json);
-                                        response.status = 200;
-                                        // Set cache
-                                        res.statusCode = 200;
-                                        res.send(response);
-                                    });
+                                resp.setEncoding('utf8');
+                                resp.on("data", function(chunk) {
+                                    html += chunk;
                                 });
-                            }
+                                resp.on("end", function(){
+                                    var $ = cheerio.load(html);
 
-                        });
-                    }).on('error', function(e){
-                        console.log('Got error: '+ e.message);
-                    });
+                                    // Find openGraph metas
+                                    var response = extract_meta($, metas);
 
+                                    // Find every rss and associated title in the metas
+                                    response.rss = extract_rss($);
+
+                                    //Extract favicon or return Host/favicon.ico
+                                    response.favicon = extract_favicon($, url);
+
+                                    //Extract oEmbed
+                                    var links = $('link[type="application/json+oembed"]');
+                                    if(links.length === 1){
+                                        var json = '';
+                                        get_http_lib(links[0].attribs.href).get(links[0].attribs.href, function(resp){
+                                            resp.on("data", function(chunk) {
+                                                json += chunk;
+                                            });
+                                            resp.on("end", function(){
+                                                response.oembed = JSON.parse(json);
+                                                response.status = 200;
+                                                res.statusCode = 200;
+                                                // Set cache
+                                                myCache.set(url, response, 172800);
+                                                res.send(response);
+                                            });
+                                        });
+                                    }else{
+                                        response.status = 200;
+                                        res.statusCode = 200;
+                                        // Set cache
+                                        myCache.set(url, response, 172800);
+                                        res.send(response);
+                                    }
+
+                                });
+                            }).on('error', function(e){
+                                console.log('Got error: '+ e.message);
+                            });
+                        }
+                    }
+                });
             }else{
                 //BAD REQUEST
                 res.statusCode = 400;
