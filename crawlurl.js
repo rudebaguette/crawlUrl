@@ -3,9 +3,10 @@
 
         var express  = require('express');
         var http     = require('http');
+        var https     = require('https');
         var cheerio  = require('cheerio');
         var NodeCache = require( "node-cache" );
-        var url_paser = require('url')
+        var url_paser = require('url');
         var app      = express();
 
         // Prepared response
@@ -20,6 +21,7 @@
                 'title': '',
                 'description': '',
                 'picture': '',
+                'oembed': []
             };
             for(var key in metas){
                 var meta = $(metas[key].join(','));
@@ -52,9 +54,34 @@
             }
         };
 
+        var get_http_lib = function(url){
+            var lib = http;
+            if(url_paser.parse(url).protocol === 'https:'){
+                lib = https;
+            }
+            return lib;
+        };
+
+        var extract_oembed = function($){
+            var links = $('link[type="application/json+oembed"]');
+            if(links.length === 1){
+                var json = '';
+                get_http_lib(links[0].attribs.href).get(links[0].attribs.href, function(resp){
+                    resp.on("data", function(chunk) {
+                        json += chunk;
+                    });
+                    resp.on("end", function(){
+                        return json;
+                    });
+                });
+            }
+        };
+
+
         app.get('*', function(req, res) {
             var myCache = new NodeCache();
             var url = req.query.url;
+            var html = '';
             var metas = {
                 'title': ['meta[property="og:title"]', 'title'],
                 'description': ['meta[property="og:description"]', 'description'],
@@ -64,29 +91,42 @@
 
             if(url){
                 // Checking for cache
-                
 
-                // CRAWL GIVEN URL
-                http.get(url, function(resp){
-                    var html = '';
-                    resp.setEncoding('utf8');
-                    resp.on("data", function(chunk) {
-                        html += chunk;
-                    });
-                    resp.on("end", function(){
-                        var $ = cheerio.load(html);
-                        var response = extract_meta($, metas);
-                        response.rss = extract_rss($);
-                        response.favicon = extract_favicon($, url);
-                        response.status = 200;
-                        res.statusCode = 200;
-                        // Set cache
+                    // [HTTP] CRAWL GIVEN URL
+                    get_http_lib(url).get(url, function(resp){
 
-                        res.send(response);
+                        resp.setEncoding('utf8');
+                        resp.on("data", function(chunk) {
+                            html += chunk;
+                        });
+                        resp.on("end", function(){
+                            var $ = cheerio.load(html);
+                            var response = extract_meta($, metas);
+                            response.rss = extract_rss($);
+                            response.favicon = extract_favicon($, url);
+                            // response.oembed = extract_oembed($);
+                            var links = $('link[type="application/json+oembed"]');
+                            if(links.length === 1){
+                                var json = '';
+                                get_http_lib(links[0].attribs.href).get(links[0].attribs.href, function(resp){
+                                    resp.on("data", function(chunk) {
+                                        json += chunk;
+                                    });
+                                    resp.on("end", function(){
+                                        response.oembed = JSON.parse(json);
+                                        response.status = 200;
+                                        // Set cache
+                                        res.statusCode = 200;
+                                        res.send(response);
+                                    });
+                                });
+                            }
+
+                        });
+                    }).on('error', function(e){
+                        console.log('Got error: '+ e.message);
                     });
-                }).on('error', function(e){
-                    console.log('Got error: '+ e.message);
-                });
+
             }else{
                 //BAD REQUEST
                 res.statusCode = 400;
