@@ -62,22 +62,6 @@
             return lib;
         };
 
-        var extract_oembed = function($){
-            var links = $('link[type="application/json+oembed"]');
-            if(links.length === 1){
-                var json = '';
-                get_http_lib(links[0].attribs.href).get(links[0].attribs.href, function(resp){
-                    resp.on("data", function(chunk) {
-                        json += chunk;
-                    });
-                    resp.on("end", function(){
-                        return json;
-                    });
-                });
-            }
-        };
-
-
         app.get('*', function(req, res) {
             var myCache = new NodeCache();
             var url = req.query.url;
@@ -101,10 +85,17 @@
                         });
                         resp.on("end", function(){
                             var $ = cheerio.load(html);
+
+                            // Find openGraph metas
                             var response = extract_meta($, metas);
+
+                            // Find every rss and associated title in the metas
                             response.rss = extract_rss($);
+
+                            //Extract favicon or return Host/favicon.ico
                             response.favicon = extract_favicon($, url);
-                            // response.oembed = extract_oembed($);
+
+                            //Extract oEmbed
                             var links = $('link[type="application/json+oembed"]');
                             if(links.length === 1){
                                 var json = '';
