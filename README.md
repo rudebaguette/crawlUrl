@@ -8,12 +8,12 @@ GET request:
 <br>Response: <br>
 ```json
 {
-    'url': final URL,
-    'status': HTTP status code,
-    'favicon': favicon url,
-    'rss': [] rss url,
-    'title': og page title || page title,
-    'description': og page description || page description,
-    'picture': og page picture,
+    url: "Final Url",
+    status: "HTTP Status Code",
+    favicon: "Favicon Url",
+    rss: "List of RSS Url",
+    title: "OG Page <title> or Page <title>",
+    description: "OG Page <description> or Page <description>",
+    picture: "OG Page picture",
 }
 ```
