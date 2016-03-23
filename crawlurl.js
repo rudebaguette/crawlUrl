@@ -66,7 +66,7 @@
         app.use(cors());
 
         app.get('*', function(req, res) {
-            console.log(req);
+            var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
             var url = req.query.url;
             var metas = {
                 'title': ['meta[property="og:title"]', 'title'],
@@ -77,7 +77,7 @@
 
             if(url){
                 // Log Activity
-                console.log("Request for: " + req.originalUrl);
+                console.log("Request from: "+ ip + " for: " + req.originalUrl);
 
                 // Clean URL
                 url = clean_url(url);
