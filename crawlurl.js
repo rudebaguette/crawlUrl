@@ -2,8 +2,7 @@
     'use strict';
 
         var express  = require('express');
-        var http     = require('http');
-        var https     = require('https');
+        var request = require('request');
         var cheerio  = require('cheerio');
         var NodeCache = require( "node-cache" );
         var url_paser = require('url');
@@ -54,25 +53,17 @@
             }
         };
 
-        var get_http_lib = function(url){
-            var lib = http;
-            if(url_paser.parse(url).protocol === 'https:'){
-                lib = https;
-            }
-            return lib;
-        };
-
         var clean_url = function(url){
             if(!/^http/.exec(url)){
                 return 'http://'+url;
             }
             return url;
-        }
+        };
 
         app.get('*', function(req, res) {
+            console.log("[INFO] Request from: "+req.headers.host+" with param "+req.originalUrl);
             var myCache = new NodeCache();
             var url = req.query.url;
-            var html = '';
             var metas = {
                 'title': ['meta[property="og:title"]', 'title'],
                 'description': ['meta[property="og:description"]', 'description'],
@@ -92,14 +83,9 @@
                             res.send(value);
                         }else{
                             // [HTTP] CRAWL GIVEN URL
-                            get_http_lib(url).get(url, function(resp){
-
-                                resp.setEncoding('utf8');
-                                resp.on("data", function(chunk) {
-                                    html += chunk;
-                                });
-                                resp.on("end", function(){
-                                    var $ = cheerio.load(html);
+                            request(url, function(error, resp, body){
+                                if(!error && resp.statusCode === 200){
+                                    var $ = cheerio.load(body);
 
                                     // Find openGraph metas
                                     var response = extract_meta($, metas);
@@ -113,19 +99,13 @@
                                     //Extract oEmbed
                                     var links = $('link[type="application/json+oembed"]');
                                     if(links.length === 1){
-                                        var json = '';
-                                        get_http_lib(links[0].attribs.href).get(links[0].attribs.href, function(resp){
-                                            resp.on("data", function(chunk) {
-                                                json += chunk;
-                                            });
-                                            resp.on("end", function(){
-                                                response.oembed = JSON.parse(json);
-                                                response.status = 200;
-                                                res.statusCode = 200;
-                                                // Set cache
-                                                myCache.set(url, response, 172800);
-                                                res.send(response);
-                                            });
+                                        request(links[0].attribs.href, function(error, resp, body){
+                                            response.oembed = JSON.parse(body);
+                                            response.status = 200;
+                                            res.statusCode = 200;
+                                            // Set cache
+                                            myCache.set(url, response, 172800);
+                                            res.send(response);
                                         });
                                     }else{
                                         response.status = 200;
@@ -134,10 +114,11 @@
                                         myCache.set(url, response, 172800);
                                         res.send(response);
                                     }
-
-                                });
-                            }).on('error', function(e){
-                                console.log('Got error: '+ e.message);
+                                }else{
+                                    console.log(error);
+                                    res.statusCode = 400;
+                                    res.send({'error': 'Invalid URI: '+url});
+                                }
                             });
                         }
                     }
@@ -145,7 +126,7 @@
             }else{
                 //BAD REQUEST
                 res.statusCode = 400;
-                res.send("URL is missing in Request");
+                res.send({'error': "URL is missing in Request"});
             }
         });
 
