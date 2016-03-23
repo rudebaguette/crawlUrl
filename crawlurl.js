@@ -72,7 +72,6 @@
                 'title': ['meta[property="og:title"]', 'title'],
                 'description': ['meta[property="og:description"]', 'description'],
                 'picture': ['meta[property="og:image"]','meta[property="twitter:image"]'],
-                'url': ['meta[property="og:url"]']
             };
 
             if(url){
@@ -100,8 +99,10 @@
                                     // Find every rss and associated title in the metas
                                     response.rss = extract_rss($);
 
+                                    response.url = resp.request.uri.href;
+
                                     //Extract favicon or return Host/favicon.ico
-                                    response.favicon = extract_favicon($, url);
+                                    response.favicon = extract_favicon($, response.url);
 
                                     //Extract oEmbed
                                     var links = $('link[type="application/json+oembed"]');
@@ -124,7 +125,10 @@
                                 }else{
                                     console.log(error);
                                     res.statusCode = 400;
-                                    res.send({'error': 'Invalid URI: '+url});
+                                    res.send({
+                                        'error': 'Invalid URI: '+url,
+                                        'status': resp.statusCode
+                                    });
                                 }
                             });
                         }
