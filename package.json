@@ -15,6 +15,7 @@
   "homepage": "https://github.com/rudebaguette/crawlUrl",
   "dependencies": {
     "cheerio": "^0.20.0",
+    "cors": "^2.7.1",
     "express": "^4.13.4",
     "htmlparser": "^1.7.7",
     "node-cache": "^3.2.1",

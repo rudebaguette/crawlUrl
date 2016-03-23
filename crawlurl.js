@@ -6,6 +6,7 @@
         var cheerio  = require('cheerio');
         var NodeCache = require( "node-cache" );
         var url_paser = require('url');
+        var cors = require('cors')
         var app      = express();
 
         // Prepared response
@@ -60,9 +61,12 @@
             return url;
         };
 
+        var myCache = new NodeCache();
+
+        app.use(cors());
+
         app.get('*', function(req, res) {
-            console.log("[INFO] Request from: "+req.headers.host+" with param "+req.originalUrl);
-            var myCache = new NodeCache();
+            console.log(req);
             var url = req.query.url;
             var metas = {
                 'title': ['meta[property="og:title"]', 'title'],
@@ -72,6 +76,9 @@
             };
 
             if(url){
+                // Log Activity
+                console.log("Request for: " + req.originalUrl);
+
                 // Clean URL
                 url = clean_url(url);
 
