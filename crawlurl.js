@@ -18,7 +18,7 @@ var extract_meta = function($, metas){
         'title': '',
         'description': '',
         'picture': '',
-        'oembed': []
+        'oembed': {}
     };
     for(var key in metas){
         var meta = $(metas[key].join(','));
@@ -105,7 +105,7 @@ app.get('*', function(req, res) {
                             //Extract oEmbed
                             var links = $('link[type="application/json+oembed"]');
                             if(links.length === 1){
-                                request(links[0].attribs.href, function(error, resp, body){
+                                request(links[0].attribs.href+'&maxwidth=600', function(error, resp, body){
                                     response.oembed = JSON.parse(body);
                                     response.status = 200;
                                     res.statusCode = 200;

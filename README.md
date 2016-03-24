@@ -64,6 +64,6 @@ GET request:
     "title": "GDC 2016: Où est LaFrenchTech ?",
     "description": "The debate on the value of holding country pavilions at large tech conferences has merit. Whatever your views on the topic may be, France was conspicuously",
     "picture": "http://www.rudebaguette.com/assets/gdc_2016_pays.jpg",
-    "oembed": [],
+    "oembed": {},
 }
 ```
