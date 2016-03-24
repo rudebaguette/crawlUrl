@@ -63,8 +63,8 @@ var myCache = new NodeCache();
 app.use(cors());
 
 var get_cache_key = function(request){
-    return request.query.maxwidth||'' + request.query.url;
-}
+    return (request.query.maxwidth || '') + request.query.url;
+};
 
 app.get('*', function(req, res) {
     var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
