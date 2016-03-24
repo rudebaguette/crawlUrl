@@ -103,10 +103,10 @@ app.get('*', function(req, res) {
                             // Find every rss and associated title in the metas
                             response.rss = extract_rss($);
 
-                            response.url = resp.request.uri.href;
+                            response.url = clean_url(resp.request.uri.href);
 
                             //Extract favicon or return Host/favicon.ico
-                            response.favicon = extract_favicon($, response.url);
+                            response.favicon = clean_url(extract_favicon($, response.url));
 
                             //Extract oEmbed
                             var links = $('link[type="application/json+oembed"]');
