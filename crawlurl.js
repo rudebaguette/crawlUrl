@@ -40,7 +40,7 @@ var extract_rss = function($){
 
 var extract_favicon = function($, url){
     var favicon = '';
-    var links = $('link[type="image/x-icon"]');
+    var links = $('link[type="image/x-icon"], link[rel="shortcut icon"]');
     if(links.length > 0){
         for(var i=0; i<links.length; i++){
             favicon = links[i].attribs.href;
