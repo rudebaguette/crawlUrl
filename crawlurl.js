@@ -62,6 +62,10 @@ var myCache = new NodeCache();
 
 app.use(cors());
 
+var get_cache_key = function(request){
+    return request.query.maxwidth||'' + request.query.url;
+}
+
 app.get('*', function(req, res) {
     var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     var url = req.query.url;
@@ -78,8 +82,10 @@ app.get('*', function(req, res) {
         // Clean URL
         url = clean_url(url);
 
+        var cache_key = get_cache_key(req);
+
         // Checking for cache
-        myCache.get(url, function(err, value){
+        myCache.get(cache_key, function(err, value){
             if( !err ){
                 if(value){
                     res.statusCode = 200;
@@ -105,7 +111,12 @@ app.get('*', function(req, res) {
                             //Extract oEmbed
                             var links = $('link[type="application/json+oembed"]');
                             if(links.length === 1){
-                                request(links[0].attribs.href+'&maxwidth=600', function(error, resp, body){
+                                var maxwidth = req.query.maxwidth;
+                                var oembed_url = links[0].attribs.href;
+                                if (maxwidth){
+                                    oembed_url += '&maxwidth=600';
+                                }
+                                request(oembed_url, function(error, resp, body){
                                     response.oembed = JSON.parse(body);
                                     response.status = 200;
                                     res.statusCode = 200;
@@ -117,7 +128,7 @@ app.get('*', function(req, res) {
                                 response.status = 200;
                                 res.statusCode = 200;
                                 // Set cache
-                                myCache.set(url, response, 172800);
+                                myCache.set(cache_key, response, 172800);
                                 res.send(response);
                             }
                         }else{
@@ -130,7 +141,6 @@ app.get('*', function(req, res) {
                             console.log(error);
                             res.statusCode = 400;
                             res.send(err);
-
                         }
                     });
                 }
