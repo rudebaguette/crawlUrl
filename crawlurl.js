@@ -51,9 +51,21 @@ var extract_favicon = function($, url){
     }
 };
 
-var clean_url = function(url){
+var clean_url = function(url, base_url){
+    // protocol less
+    if(/^\/\//.exec(url)){
+        return url;
+    }
+    // absolute url
+    if(/^\/[^\/]/.exec(url)){
+        url = url_paser.parse(base_url).host + url;
+    }
     if(!/^http/.exec(url)){
-        return 'http://'+url;
+        if(base_url){
+            return url_paser.parse(base_url).protocol + '//'+url;
+        } else {
+            return 'http://'+url;
+        }
     }
     return url;
 };
@@ -106,7 +118,7 @@ app.get('*', function(req, res) {
                             response.url = clean_url(resp.request.uri.href);
 
                             //Extract favicon or return Host/favicon.ico
-                            response.favicon = clean_url(extract_favicon($, response.url));
+                            response.favicon = clean_url(extract_favicon($, response.url), response.url);
 
                             //Extract oEmbed
                             var links = $('link[type="application/json+oembed"]');
