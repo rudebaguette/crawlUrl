@@ -18,7 +18,7 @@ var extract_meta = function($, metas){
         'title': '',
         'description': '',
         'picture': '',
-        'oembed': []
+        'oembed': {}
     };
     for(var key in metas){
         var meta = $(metas[key].join(','));
@@ -40,7 +40,7 @@ var extract_rss = function($){
 
 var extract_favicon = function($, url){
     var favicon = '';
-    var links = $('link[type="image/x-icon"]');
+    var links = $('link[type="image/x-icon"], link[rel="shortcut icon"]');
     if(links.length > 0){
         for(var i=0; i<links.length; i++){
             favicon = links[i].attribs.href;
@@ -51,9 +51,21 @@ var extract_favicon = function($, url){
     }
 };
 
-var clean_url = function(url){
+var clean_url = function(url, base_url){
+    // protocol less
+    if(/^\/\//.exec(url)){
+        return url;
+    }
+    // absolute url
+    if(/^\/[^\/]/.exec(url)){
+        url = url_paser.parse(base_url).host + url;
+    }
     if(!/^http/.exec(url)){
-        return 'http://'+url;
+        if(base_url){
+            return url_paser.parse(base_url).protocol + '//'+url;
+        } else {
+            return 'http://'+url;
+        }
     }
     return url;
 };
@@ -61,6 +73,10 @@ var clean_url = function(url){
 var myCache = new NodeCache();
 
 app.use(cors());
+
+var get_cache_key = function(request){
+    return (request.query.maxwidth || '') + request.query.url;
+};
 
 app.get('*', function(req, res) {
     var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -78,8 +94,10 @@ app.get('*', function(req, res) {
         // Clean URL
         url = clean_url(url);
 
+        var cache_key = get_cache_key(req);
+
         // Checking for cache
-        myCache.get(url, function(err, value){
+        myCache.get(cache_key, function(err, value){
             if( !err ){
                 if(value){
                     res.statusCode = 200;
@@ -97,15 +115,20 @@ app.get('*', function(req, res) {
                             // Find every rss and associated title in the metas
                             response.rss = extract_rss($);
 
-                            response.url = resp.request.uri.href;
+                            response.url = clean_url(resp.request.uri.href);
 
                             //Extract favicon or return Host/favicon.ico
-                            response.favicon = extract_favicon($, response.url);
+                            response.favicon = clean_url(extract_favicon($, response.url), response.url);
 
                             //Extract oEmbed
                             var links = $('link[type="application/json+oembed"]');
                             if(links.length === 1){
-                                request(links[0].attribs.href, function(error, resp, body){
+                                var maxwidth = req.query.maxwidth;
+                                var oembed_url = links[0].attribs.href;
+                                if (maxwidth){
+                                    oembed_url += '&maxwidth=600';
+                                }
+                                request(oembed_url, function(error, resp, body){
                                     response.oembed = JSON.parse(body);
                                     response.status = 200;
                                     res.statusCode = 200;
@@ -117,7 +140,7 @@ app.get('*', function(req, res) {
                                 response.status = 200;
                                 res.statusCode = 200;
                                 // Set cache
-                                myCache.set(url, response, 172800);
+                                myCache.set(cache_key, response, 172800);
                                 res.send(response);
                             }
                         }else{
@@ -131,7 +154,6 @@ app.get('*', function(req, res) {
                             console.log(error);
                             res.statusCode = 400;
                             res.send(err);
-
                         }
                     });
                 }
