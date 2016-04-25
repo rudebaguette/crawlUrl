@@ -129,12 +129,20 @@ app.get('*', function(req, res) {
                                     oembed_url += '&maxwidth=600';
                                 }
                                 request(oembed_url, function(error, resp, body){
-                                    response.oembed = JSON.parse(body);
-                                    response.status = 200;
-                                    res.statusCode = 200;
-                                    // Set cache
-                                    myCache.set(url, response, 172800);
-                                    res.send(response);
+                                    try{
+                                        response.oembed = JSON.parse(body);
+                                        response.status = 200;
+                                        res.statusCode = 200;
+                                        // Set cache
+                                        myCache.set(url, response, 172800);
+                                        res.send(response);
+                                    }catch(e){
+                                        response.status = 200;
+                                        res.statusCode = 200;
+                                        // Set cache
+                                        myCache.set(cache_key, response, 172800);
+                                        res.send(response);
+                                    }
                                 });
                             }else{
                                 response.status = 200;
