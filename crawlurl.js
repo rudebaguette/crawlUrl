@@ -127,6 +127,7 @@ app.get('*', function(req, res) {
                             if(resp){
                                 err.status = resp.statusCode;
                             }
+                            console.log('Error for url ', url)
                             console.log(error);
                             res.statusCode = 400;
                             res.send(err);
